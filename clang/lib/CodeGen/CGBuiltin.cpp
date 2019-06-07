@@ -493,9 +493,12 @@ namespace {
 static WidthAndSignedness
 getIntegerWidthAndSignedness(const clang::ASTContext &context,
                              const clang::QualType Type) {
-  assert(Type->isIntegerType() && "Given type is not an integer.");
-  unsigned Width = Type->isBooleanType() ? 1 : context.getTypeInfo(Type).Width;
-  bool Signed = Type->isSignedIntegerType();
+  clang::QualType Ty = Type;
+  if (Ty->isVectorType())
+    Ty = Ty->castAs<clang::VectorType>()->getElementType();
+  assert(Ty->isIntegerType() && "Given type is not an integer.");
+  unsigned Width = Ty->isBooleanType() ? 1 : context.getTypeInfo(Ty).Width;
+  bool Signed = Ty->isSignedIntegerType();
   return {Width, Signed};
 }
 
@@ -3241,6 +3244,11 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
     llvm::Type *EncompassingLLVMTy =
         llvm::IntegerType::get(CGM.getLLVMContext(), EncompassingInfo.Width);
 
+    if (LeftArg->getType()->isVectorType())
+      EncompassingLLVMTy = llvm::VectorType::get(
+        EncompassingLLVMTy,
+        LeftArg->getType()->getAs<clang::VectorType>()->getNumElements());
+
     llvm::Type *ResultLLVMTy = CGM.getTypes().ConvertType(ResultQTy);
 
     llvm::Intrinsic::ID IntrinsicId;
@@ -3295,7 +3303,9 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
     // Finally, store the result using the pointer.
     bool isVolatile =
       ResultArg->getType()->getPointeeType().isVolatileQualified();
+
     Builder.CreateStore(EmitToMemory(Result, ResultQTy), ResultPtr, isVolatile);
+
 
     return RValue::get(Overflow);
   }

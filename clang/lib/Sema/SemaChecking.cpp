@@ -205,11 +205,20 @@ static bool SemaBuiltinOverflow(Sema &S, CallExpr *TheCall) {
   if (checkArgCount(S, TheCall, 3))
     return true;
 
+  int VecWidth = 0;
+  clang::VectorType::VectorKind VecKind;
+
+  if (TheCall->getArg(0)->getType()->isVectorType()) {
+    VecWidth = TheCall->getArg(0)->getType()->getAs<clang::VectorType>()->getNumElements();
+    VecKind = TheCall->getArg(0)->getType()->getAs<clang::VectorType>()->getVectorKind();
+
+  }
+
   // First two arguments should be integers.
   for (unsigned I = 0; I < 2; ++I) {
     ExprResult Arg = TheCall->getArg(I);
     QualType Ty = Arg.get()->getType();
-    if (!Ty->isIntegerType()) {
+    if (false && !Ty->isIntegerType()) {
       S.Diag(Arg.get()->getBeginLoc(), diag::err_overflow_builtin_must_be_int)
           << Ty << Arg.get()->getSourceRange();
       return true;
@@ -229,7 +238,9 @@ static bool SemaBuiltinOverflow(Sema &S, CallExpr *TheCall) {
     ExprResult Arg = TheCall->getArg(2);
     QualType Ty = Arg.get()->getType();
     const auto *PtrTy = Ty->getAs<PointerType>();
-    if (!(PtrTy && PtrTy->getPointeeType()->isIntegerType() &&
+    if (!(PtrTy && (PtrTy->getPointeeType()->isIntegerType() ||
+                   (PtrTy->getPointeeType()->isVectorType() &&
+                    PtrTy->getPointeeType()->getAs<clang::VectorType>()->getElementType()->isIntegerType())) &&
           !PtrTy->getPointeeType().isConstQualified())) {
       S.Diag(Arg.get()->getBeginLoc(),
              diag::err_overflow_builtin_must_be_ptr_int)
@@ -243,6 +254,12 @@ static bool SemaBuiltinOverflow(Sema &S, CallExpr *TheCall) {
       return true;
     TheCall->setArg(2, Arg.get());
   }
+
+  QualType ResTy = TheCall->getType();
+  if (VecWidth) {
+    ResTy = S.Context.getVectorType(ResTy, VecWidth, VecKind);
+  }
+  TheCall->setType(ResTy);
   return false;
 }
 

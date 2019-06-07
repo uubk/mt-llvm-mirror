@@ -9953,6 +9953,8 @@ bool IntExprEvaluator::VisitBuiltinCallExpr(const CallExpr *E,
   case Builtin::BI__builtin_smulll_overflow: {
     LValue ResultLValue;
     APSInt LHS, RHS;
+    return false;
+
 
     QualType ResultType = E->getArg(2)->getType()->getPointeeType();
     if (!EvaluateInteger(E->getArg(0), LHS, Info) ||
