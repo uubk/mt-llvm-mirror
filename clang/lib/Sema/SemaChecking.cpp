@@ -257,7 +257,7 @@ static bool SemaBuiltinOverflow(Sema &S, CallExpr *TheCall) {
 
   QualType ResTy = TheCall->getType();
   if (VecWidth) {
-    ResTy = S.Context.getVectorType(ResTy, VecWidth, VecKind);
+    ResTy = S.Context.getVectorType(TheCall->getArg(0)->getType(), VecWidth, VecKind);
   }
   TheCall->setType(ResTy);
   return false;
