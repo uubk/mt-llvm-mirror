@@ -469,7 +469,8 @@ static llvm::Value *EmitOverflowIntrinsic(CodeGenFunction &CGF,
   Function *Callee = CGF.CGM.getIntrinsic(IntrinsicID, X->getType());
   llvm::Value *Tmp = CGF.Builder.CreateCall(Callee, {X, Y});
   Carry = CGF.Builder.CreateExtractValue(Tmp, 1);
-  Carry = CGF.Builder.CreateSExt(Carry, X->getType());
+  if (X->getType()->isVectorTy())
+    Carry = CGF.Builder.CreateSExt(Carry, X->getType());
   return CGF.Builder.CreateExtractValue(Tmp, 0);
 }
 
