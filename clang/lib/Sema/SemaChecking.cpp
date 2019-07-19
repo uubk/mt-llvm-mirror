@@ -206,12 +206,9 @@ static bool SemaBuiltinOverflow(Sema &S, CallExpr *TheCall) {
     return true;
 
   int VecWidth = 0;
-  clang::VectorType::VectorKind VecKind;
 
   if (TheCall->getArg(0)->getType()->isVectorType()) {
     VecWidth = TheCall->getArg(0)->getType()->getAs<clang::VectorType>()->getNumElements();
-    VecKind = TheCall->getArg(0)->getType()->getAs<clang::VectorType>()->getVectorKind();
-
   }
 
   // First two arguments should be integers.
