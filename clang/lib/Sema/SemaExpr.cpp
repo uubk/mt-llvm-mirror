@@ -6503,7 +6503,6 @@ bool Sema::CheckVectorCast(SourceRange R, QualType VectorTy, QualType Ty,
                            CastKind &Kind) {
   assert(VectorTy->isVectorType() && "Not a vector type!");
 
-#if 0
   if (Ty->isVectorType() || Ty->isIntegralType(Context)) {
     if (!areLaxCompatibleVectorTypes(Ty, VectorTy))
       return Diag(R.getBegin(),
@@ -6516,7 +6515,6 @@ bool Sema::CheckVectorCast(SourceRange R, QualType VectorTy, QualType Ty,
                 diag::err_invalid_conversion_between_vector_and_scalar)
       << VectorTy << Ty << R;
 
-#endif
   Kind = CK_BitCast;
   return false;
 }
@@ -6565,7 +6563,9 @@ ExprResult Sema::CheckExtVectorCast(SourceRange R, QualType DestTy,
   // In OpenCL, casts between vectors of different types are not allowed.
   // (See OpenCL 6.2).
   if (SrcTy->isVectorType()) {
-    if (false) {
+    if (!areLaxCompatibleVectorTypes(SrcTy, DestTy) ||
+        (getLangOpts().OpenCL &&
+         !Context.hasSameUnqualifiedType(DestTy, SrcTy))) {
       Diag(R.getBegin(),diag::err_invalid_conversion_between_ext_vectors)
         << DestTy << SrcTy << R;
       return ExprError();
